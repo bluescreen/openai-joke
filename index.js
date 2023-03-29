@@ -1,4 +1,7 @@
 const { Configuration, OpenAIApi } = require("openai");
+var fs = require("fs");
+var request = require("request");
+
 require("dotenv").config();
 
 const configuration = new Configuration({
@@ -10,21 +13,47 @@ const openai = new OpenAIApi(configuration);
 async function tellJoke(about) {
   const response = await openai.createCompletion({
     model: "text-davinci-003",
-    prompt: "Erzähl mir einen zufälligen Witz über " + about,
+    prompt: "Create a meme text about " + about,
     temperature: 0.8,
-    max_tokens: 100,
+    max_tokens: 20,
     top_p: 1.0,
     frequency_penalty: 2.0,
     presence_penalty: 0.5,
   });
-  return response.data.choices.map(({ text }) => text).join();
+  const joke = response.data.choices.map(({ text }) => text).join();
+  console.log(joke);
+  return joke;
+}
+
+async function createImageFromJoke(prompt) {
+  const response = await openai.createImage({
+    prompt: prompt,
+    n: 1,
+    size: "512x512",
+  });
+  return response.data.data[0].url;
 }
 
 const readline = require("readline").createInterface({
   input: process.stdin,
   output: process.stdout,
 });
-readline.question("Erzähl mir einen Witz über:\n", (name) => {
-  tellJoke(name).then(console.log);
+readline.question("Text:\n", (name) => {
+  tellJoke(name).then((joke) => {
+    createImageFromJoke(joke).then((uri) => {
+      console.log("DOWNLOAD", uri);
+
+      request.head(uri, function (err, res, body) {
+        console.log("content-type:", res.headers["content-type"]);
+        console.log("content-length:", res.headers["content-length"]);
+
+        request(uri)
+          .pipe(fs.createWriteStream("results/" + name + ".png"))
+          .on("close", () => {
+            console.log("DONE");
+          });
+      });
+    });
+  });
   readline.close();
 });
