@@ -9,7 +9,7 @@ const openai = new OpenAIApi(configuration);
 const response = openai
   .createCompletion({
     model: "text-davinci-003",
-    prompt: "Erzähl mir einen lustigen Witz",
+    prompt: "Erzähl mir einen lustigen Witz " + Date.now(),
     temperature: 0,
     max_tokens: 100,
     top_p: 1.0,
