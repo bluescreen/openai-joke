@@ -6,15 +6,16 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
+// https://platform.openai.com/docs/models/gpt-3
 async function tellJoke(about) {
   const response = await openai.createCompletion({
     model: "text-davinci-003",
-    prompt: "Erzähl mir einen zufälligen schlechten Witz über " + about,
-    temperature: 0,
+    prompt: "Erzähl mir einen zufälligen Witz über " + about,
+    temperature: 0.8,
     max_tokens: 100,
     top_p: 1.0,
-    frequency_penalty: 0.0,
-    presence_penalty: 0.0,
+    frequency_penalty: 2.0,
+    presence_penalty: 0.5,
   });
   return response.data.choices.map(({ text }) => text).join();
 }
