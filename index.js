@@ -6,16 +6,24 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-const response = openai
-  .createCompletion({
+async function tellJoke(about) {
+  const response = await openai.createCompletion({
     model: "text-davinci-003",
-    prompt: "Erzähl mir einen lustigen Witz " + Date.now(),
+    prompt: "Erzähl mir einen zufälligen schlechten Witz über " + about,
     temperature: 0,
     max_tokens: 100,
     top_p: 1.0,
     frequency_penalty: 0.0,
     presence_penalty: 0.0,
-  })
-  .then((response) => {
-    console.log(response.data.choices.map(({ text }) => text).join());
   });
+  return response.data.choices.map(({ text }) => text).join();
+}
+
+const readline = require("readline").createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+readline.question("Erzähl mir einen Witz über:\n", (name) => {
+  tellJoke(name).then(console.log);
+  readline.close();
+});
