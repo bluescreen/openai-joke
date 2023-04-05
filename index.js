@@ -1,6 +1,8 @@
 const { Configuration, OpenAIApi } = require("openai");
-var fs = require("fs");
-var request = require("request");
+const fs = require("fs");
+const gTTS = require("gtts");
+const player = require("play-sound")((opts = {}));
+const { LANGUAGE, PROMPT, RESULT_FILE, OPENAI_CONFIG } = require("./config");
 
 require("dotenv").config();
 
@@ -12,17 +14,28 @@ const openai = new OpenAIApi(configuration);
 // https://platform.openai.com/docs/models/gpt-3
 async function tellJoke(about) {
   const response = await openai.createCompletion({
-    model: "text-davinci-003",
-    prompt: "Create a meme text about " + about,
-    temperature: 0.8,
-    max_tokens: 20,
-    top_p: 1.0,
-    frequency_penalty: 2.0,
-    presence_penalty: 0.5,
+    prompt: PROMPT + " " + about,
+    ...OPENAI_CONFIG,
   });
   const joke = response.data.choices.map(({ text }) => text).join();
   console.log(joke);
   return joke;
+}
+
+async function textToSpeech(text) {
+  var gtts = new gTTS(text, LANGUAGE);
+  gtts.save(RESULT_FILE, function (err, result) {
+    if (err) {
+      throw new Error(err);
+    }
+    playSound(RESULT_FILE);
+  });
+}
+
+function playSound(resultFile) {
+  player.play(resultFile, function (err) {
+    if (err) throw err;
+  });
 }
 
 async function createImageFromJoke(prompt) {
@@ -38,22 +51,10 @@ const readline = require("readline").createInterface({
   input: process.stdin,
   output: process.stdout,
 });
-readline.question("Text:\n", (name) => {
-  tellJoke(name).then((joke) => {
-    createImageFromJoke(joke).then((uri) => {
-      console.log("DOWNLOAD", uri);
 
-      request.head(uri, function (err, res, body) {
-        console.log("content-type:", res.headers["content-type"]);
-        console.log("content-length:", res.headers["content-length"]);
-
-        request(uri)
-          .pipe(fs.createWriteStream("results/" + name + ".png"))
-          .on("close", () => {
-            console.log("DONE");
-          });
-      });
-    });
+readline.question("Prompt:\n", (prompt) => {
+  tellJoke(prompt).then((text) => {
+    textToSpeech(text);
   });
   readline.close();
 });
